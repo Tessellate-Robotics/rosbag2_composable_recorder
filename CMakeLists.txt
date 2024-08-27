@@ -36,6 +36,7 @@ find_package(ament_cmake_auto REQUIRED)
 set(ROS2_DEPENDENCIES
   "rclcpp"
   "rclcpp_components"
+  "std_msgs"
   "std_srvs"
   "rosbag2_transport"
 )
