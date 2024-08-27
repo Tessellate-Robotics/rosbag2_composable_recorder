@@ -47,6 +47,10 @@ ComposableRecorder::ComposableRecorder(const rclcpp::NodeOptions & options)
   storageId_ = declare_parameter<std::string>("storage_id", "sqlite3");
   maxCacheSize_ = declare_parameter<int>("max_cache_size", 100 * 1024 * 1024);
   bagName_ = declare_parameter<std::string>("bag_name", "");
+  if(bagName_.empty())
+  {
+    bagPrefix_ = declare_parameter<std::string>("bag_prefix", "rosbag2_");
+  }
 
   // set recorder options
 #ifdef USE_GET_RECORD_OPTIONS
@@ -103,7 +107,7 @@ bool ComposableRecorder::startRecording(
   if (!bagName_.empty()) {
     sopt.uri = bagName_;
   } else {
-    sopt.uri = declare_parameter<std::string>("bag_prefix", "rosbag2_") + get_time_stamp();
+    sopt.uri = bagPrefix_ + get_time_stamp();
   }
 
   res->success = false;

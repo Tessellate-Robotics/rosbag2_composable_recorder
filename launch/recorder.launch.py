@@ -30,7 +30,7 @@ def launch_setup(context, *args, **kwargs):
             name='composable_recorder_container',
             namespace='',
             package='rclcpp_components',
-            executable='component_container',
+            executable='component_container_mt',
             composable_node_descriptions=[
                 #
                 # add further ComposableNode elements here, e.g. the driver.
@@ -41,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
                     plugin='rosbag2_composable_recorder::ComposableRecorder',
                     name="recorder",
                     # set topics etc here
-                    parameters=[{'topics': ['/your_topic_here'],
+                    parameters=[{'topics': ['/test'],
                                  'storage_id': 'sqlite3',
                                  'record_all': False,
                                  'disable_discovery': False,

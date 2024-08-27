@@ -45,6 +45,7 @@ private:
   std::string storageId_;
   int maxCacheSize_;
   std::string bagName_;
+  std::string bagPrefix_;
 };
 
 }  // namespace rosbag2_composable_recorder
