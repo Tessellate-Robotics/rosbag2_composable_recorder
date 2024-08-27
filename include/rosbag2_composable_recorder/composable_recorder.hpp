@@ -34,10 +34,17 @@ private:
   bool startRecording(
     const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
     std::shared_ptr<std_srvs::srv::Trigger::Response> res);
+  bool stopRecording(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> res);
 
   // ---- variables
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr service_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr startRecordingService_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr stopRecordingService_;
   bool isRecording_{false};
+  std::string storageId_;
+  int maxCacheSize_;
+  std::string bagName_;
 };
 
 }  // namespace rosbag2_composable_recorder

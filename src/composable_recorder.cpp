@@ -44,20 +44,9 @@ ComposableRecorder::ComposableRecorder(const rclcpp::NodeOptions & options)
   for (const auto & topic : topics) {
     RCLCPP_INFO_STREAM(get_logger(), "recording topic: " << topic);
   }
-  // set storage options
-#ifdef USE_GET_STORAGE_OPTIONS
-  rosbag2_storage::StorageOptions & sopt = get_storage_options();
-#else
-  rosbag2_storage::StorageOptions & sopt = storage_options_;
-#endif
-  sopt.storage_id = declare_parameter<std::string>("storage_id", "sqlite3");
-  sopt.max_cache_size = declare_parameter<int>("max_cache_size", 100 * 1024 * 1024);
-  const std::string bag_name = declare_parameter<std::string>("bag_name", "");
-  if (!bag_name.empty()) {
-    sopt.uri = bag_name;
-  } else {
-    sopt.uri = declare_parameter<std::string>("bag_prefix", "rosbag2_") + get_time_stamp();
-  }
+  storageId_ = declare_parameter<std::string>("storage_id", "sqlite3");
+  maxCacheSize_ = declare_parameter<int>("max_cache_size", 100 * 1024 * 1024);
+  bagName_ = declare_parameter<std::string>("bag_name", "");
 
   // set recorder options
 #ifdef USE_GET_RECORD_OPTIONS
@@ -85,12 +74,16 @@ ComposableRecorder::ComposableRecorder(const rclcpp::NodeOptions & options)
 
   if (declare_parameter<bool>("start_recording_immediately", false)) {
     record();
-  } else {
-    service_ = create_service<std_srvs::srv::Trigger>(
-      "start_recording",
-      std::bind(
-        &ComposableRecorder::startRecording, this, std::placeholders::_1, std::placeholders::_2));
+    isRecording_ = true;
   }
+  startRecordingService_ = create_service<std_srvs::srv::Trigger>(
+    "recorder/start_recording",
+    std::bind(
+      &ComposableRecorder::startRecording, this, std::placeholders::_1, std::placeholders::_2));
+  stopRecordingService_ = create_service<std_srvs::srv::Trigger>(
+    "recorder/stop_recording",
+    std::bind(
+      &ComposableRecorder::stopRecording, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 bool ComposableRecorder::startRecording(
@@ -98,6 +91,21 @@ bool ComposableRecorder::startRecording(
   std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   (void)req;
+
+  // set storage options
+#ifdef USE_GET_STORAGE_OPTIONS
+  rosbag2_storage::StorageOptions & sopt = get_storage_options();
+#else
+  rosbag2_storage::StorageOptions & sopt = storage_options_;
+#endif
+  sopt.storage_id = storageId_;
+  sopt.max_cache_size = maxCacheSize_;
+  if (!bagName_.empty()) {
+    sopt.uri = bagName_;
+  } else {
+    sopt.uri = declare_parameter<std::string>("bag_prefix", "rosbag2_") + get_time_stamp();
+  }
+
   res->success = false;
   if (isRecording_) {
     RCLCPP_WARN(get_logger(), "already recording!");
@@ -110,6 +118,31 @@ bool ComposableRecorder::startRecording(
       RCLCPP_INFO(get_logger(), "started recording successfully");
       res->success = true;
       res->message = "started recoding!";
+    } catch (const std::runtime_error & e) {
+      RCLCPP_WARN(get_logger(), "cannot toggle recording!");
+      res->message = "runtime error occurred: " + std::string(e.what());
+    }
+  }
+  return (true);
+}
+
+bool ComposableRecorder::stopRecording(
+  const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
+  const std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+{
+  (void)req;
+  res->success = false;
+  if (!isRecording_) {
+    RCLCPP_WARN(get_logger(), "recording is already stopped!");
+    res->message = "recording is already stopped!";
+  } else {
+    RCLCPP_INFO(get_logger(), "stopping recording...");
+    try {
+      stop();
+      isRecording_ = false;
+      RCLCPP_INFO(get_logger(), "stopped recording successfully");
+      res->success = true;
+      res->message = "stopped recoding!";
     } catch (const std::runtime_error & e) {
       RCLCPP_WARN(get_logger(), "cannot toggle recording!");
       res->message = "runtime error occurred: " + std::string(e.what());
