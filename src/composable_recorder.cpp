@@ -85,7 +85,7 @@ ComposableRecorder::ComposableRecorder(const rclcpp::NodeOptions & options)
       &ComposableRecorder::startStopRecording, this, std::placeholders::_1, std::placeholders::_2));
   statePublisher_ = this->create_publisher<std_msgs::msg::Int8>("recorder/state", 10);
   wallTimer_ = this->create_wall_timer(
-    std::chrono::milliseconds(1000), std::bind(&ComposableRecorder::timerCallback, this));
+    std::chrono::milliseconds(100), std::bind(&ComposableRecorder::timerCallback, this));
 }
 
 bool ComposableRecorder::startStopRecording(
